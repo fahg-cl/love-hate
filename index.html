@@ -277,14 +277,23 @@
       color: var(--muted);
     }
 
-    .register-btn {
-      min-width: 50px;
+    .item-actions {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .register-btn,
+    .edit-item-btn {
+      min-width: 46px;
       height: 44px;
       border: 0;
       border-radius: 14px;
-      background: #f6e8ef;
-      font-size: 1.25rem;
+      font-size: 1.15rem;
     }
+
+    .register-btn { background: #f6e8ef; }
+    .edit-item-btn { background: #f1edf6; }
 
     .tanks-wrapper {
       min-height: 520px;
@@ -579,7 +588,7 @@
       header.app-header { align-items: flex-start; }
       .header-actions .status-pill { display: none; }
       .card-header, .card-body { padding-left: 14px; padding-right: 14px; }
-      .item-row { grid-template-columns: 42px minmax(0,1fr) 46px; padding: 10px; }
+      .item-row { grid-template-columns: 42px minmax(0,1fr) auto; padding: 10px; }
       .item-icon { width: 42px; height: 42px; }
       .tanks-wrapper { gap: 10px; padding: 12px; }
       .tank { width: 92px; height: 240px; border-width: 4px; }
@@ -654,7 +663,7 @@
               <div id="negativeLiquid" class="liquid negative"><span>💔</span></div>
             </div>
             <div id="negativeCount" class="tank-count">0</div>
-            <div class="tank-sub">eventos negativos</div>
+            <div class="tank-sub">puntos negativos ponderados</div>
           </div>
         </div>
       </article>
@@ -729,7 +738,7 @@
 
   <div id="itemModal" class="modal-backdrop hidden">
     <div class="modal">
-      <div class="modal-header"><h3>Nuevo tipo de registro</h3><button class="btn btn-secondary btn-icon" data-close="itemModal">✕</button></div>
+      <div class="modal-header"><h3 id="itemModalTitle">Nuevo tipo de registro</h3><button class="btn btn-secondary btn-icon" data-close="itemModal">✕</button></div>
       <div class="modal-body">
         <div class="field">
           <label for="itemName">Nombre del ítem</label>
@@ -790,7 +799,7 @@
         </label>
         <button id="clearAllBtn" class="btn btn-danger" style="width:100%">Eliminar todos los datos</button>
         <p style="color:var(--muted);font-size:.85rem;line-height:1.5;margin-bottom:0">
-          Versión 0.1.0. La conexión con Firebase y el modo espectador quedan preparados para una fase posterior.
+          Versión 0.3.0. La conexión con Firebase y el modo espectador quedan preparados para una fase posterior.
         </p>
       </div>
     </div>
@@ -801,7 +810,7 @@
   <script>
     "use strict";
 
-    const APP_VERSION = "0.1.0";
+    const APP_VERSION = "0.3.0";
     const STORAGE_KEY = "relationshipTracker_v1";
     const AUTH_KEY = "relationshipTracker_auth_v1";
     const CREDENTIAL_KEY = "relationshipTracker_webauthn_credential";
@@ -812,6 +821,7 @@
       records: [],
       period: "all",
       activeItemId: null,
+      activeEditItemId: null,
       rating: { hearts: 0, rejection: false, conflict: false },
       authenticated: false
     };
@@ -1077,24 +1087,44 @@
                 ${item.confidential ? '<span class="badge">🔒 Confidencial</span>' : ""}
               </div>
             </div>
-            <button class="register-btn" data-item-id="${item.id}" aria-label="Registrar ${escapeHtml(item.name)}">＋</button>
+            <div class="item-actions">
+              <button class="edit-item-btn" data-edit-item-id="${item.id}" aria-label="Editar ${escapeHtml(item.name)}">✏️</button>
+              <button class="register-btn" data-item-id="${item.id}" aria-label="Registrar ${escapeHtml(item.name)}">＋</button>
+            </div>
           </div>`;
       }).join("");
 
       qsAll("[data-item-id]").forEach(btn => btn.addEventListener("click", () => openRecordModal(btn.dataset.itemId)));
+      qsAll("[data-edit-item-id]").forEach(btn => btn.addEventListener("click", () => openEditItemModal(btn.dataset.editItemId)));
+    }
+
+    function negativeValue(record) {
+      if (record.conflict) return 5;
+      if (record.rejection) return 2;
+      return 0;
     }
 
     function renderSummary() {
       const records = filteredRecords();
       const positive = records.reduce((sum, r) => sum + (r.hearts || 0), 0);
-      const negative = records.filter(r => r.rejection || r.conflict).length;
-      const max = Math.max(positive, negative, 10);
+      const negative = records.reduce((sum, r) => sum + negativeValue(r), 0);
+      const totalBalance = positive + negative;
+
+      let positivePercent = 0;
+      let negativePercent = 0;
+
+      if (totalBalance > 0) {
+        positivePercent = (positive / totalBalance) * 100;
+        negativePercent = (negative / totalBalance) * 100;
+      }
 
       $("positiveCount").textContent = positive;
       $("negativeCount").textContent = negative;
       $("recordCountBadge").textContent = `${records.length} registro${records.length === 1 ? "" : "s"}`;
-      $("positiveLiquid").style.height = `${Math.max(3, (positive / max) * 100)}%`;
-      $("negativeLiquid").style.height = `${Math.max(3, (negative / max) * 100)}%`;
+      $("positiveLiquid").style.height = `${positivePercent}%`;
+      $("negativeLiquid").style.height = `${negativePercent}%`;
+      $("positiveLiquid").title = `${positivePercent.toFixed(3)}% del balance`;
+      $("negativeLiquid").title = `${negativePercent.toFixed(3)}% del balance`;
     }
 
     function updatePeriodUI() {
@@ -1104,6 +1134,9 @@
     }
 
     function openItemModal() {
+      state.activeEditItemId = null;
+      $("itemModalTitle").textContent = "Nuevo tipo de registro";
+      $("saveItemBtn").textContent = "Guardar ítem";
       $("itemName").value = "";
       $("itemIcon").value = "";
       $("itemConfidential").checked = false;
@@ -1111,20 +1144,59 @@
       setTimeout(() => $("itemName").focus(), 100);
     }
 
+    function openEditItemModal(itemId) {
+      const item = state.items.find(i => i.id === itemId);
+      if (!item) return;
+
+      state.activeEditItemId = itemId;
+      $("itemModalTitle").textContent = "Editar tipo de registro";
+      $("saveItemBtn").textContent = "Guardar cambios";
+      $("itemName").value = item.name;
+      $("itemIcon").value = item.icon || "";
+      $("itemConfidential").checked = !!item.confidential;
+      showModal("itemModal");
+      setTimeout(() => $("itemName").focus(), 100);
+    }
+
     function saveItem() {
       const name = $("itemName").value.trim();
+      const icon = $("itemIcon").value.trim() || "📝";
+      const confidential = $("itemConfidential").checked;
+
       if (!name) return showToast("Ingresa un nombre para el ítem.");
-      state.items.push({
-        id: uid(),
-        name,
-        icon: $("itemIcon").value.trim() || "📝",
-        confidential: $("itemConfidential").checked,
-        createdAt: new Date().toISOString()
-      });
+
+      if (state.activeEditItemId) {
+        const item = state.items.find(i => i.id === state.activeEditItemId);
+        if (!item) return showToast("No se encontró el ítem.");
+
+        item.name = name;
+        item.icon = icon;
+        item.confidential = confidential;
+        item.updatedAt = new Date().toISOString();
+
+        state.records.forEach(record => {
+          if (record.itemId === item.id) {
+            record.itemName = name;
+            record.confidential = confidential;
+          }
+        });
+
+        showToast("Ítem actualizado.");
+      } else {
+        state.items.push({
+          id: uid(),
+          name,
+          icon,
+          confidential,
+          createdAt: new Date().toISOString()
+        });
+        showToast("Ítem creado.");
+      }
+
+      state.activeEditItemId = null;
       saveState();
       hideModal("itemModal");
       renderAll();
-      showToast("Ítem creado.");
     }
 
     function openRecordModal(itemId) {
@@ -1380,7 +1452,8 @@
       });
 
       $("conflictBtn").addEventListener("click", () => {
-        state.rating = { hearts: 0, rejection: false, conflict: !state.rating.conflict };
+        const activate = !state.rating.conflict;
+        state.rating = { hearts: 0, rejection: activate, conflict: activate };
         renderRating();
       });
 
@@ -1398,12 +1471,26 @@
       ["historyFrom","historyTo","historySearch"].forEach(id => $(id).addEventListener("input", renderHistory));
 
       $("clearAllBtn").addEventListener("click", () => {
-        if (!confirm("¿Eliminar todos los ítems y registros? Esta acción no se puede deshacer.")) return;
-        localStorage.removeItem(STORAGE_KEY);
-        Object.assign(state, defaultState());
+        if (!confirm("¿Deseas eliminar todos los registros almacenados? Esta acción no se puede deshacer.")) return;
+
+        const deleteItems = confirm(
+          "¿También deseas eliminar los ítems creados?\n\n" +
+          "Aceptar: elimina registros e ítems.\n" +
+          "Cancelar: elimina solo los registros y conserva los ítems."
+        );
+
+        state.records = [];
+
+        if (deleteItems) {
+          state.items = [];
+          showToast("Se eliminaron todos los registros y los ítems.");
+        } else {
+          showToast("Se eliminaron los registros y se conservaron los ítems.");
+        }
+
+        saveState();
         hideModal("settingsModal");
         renderAll();
-        showToast("Todos los datos fueron eliminados.");
       });
 
       $("importInput").addEventListener("change", async e => {
