@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "registro-relacion-auth",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-30",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  }
+}
