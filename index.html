@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Registro de Relación" />
+  <title>Registro de Relación</title>
+  <style>
+    :root {
+      --bg: #f6f3fb;
+      --card: #ffffff;
+      --text: #21172d;
+      --muted: #70647d;
+      --primary: #7c3aed;
+      --primary-2: #9f67ff;
+      --positive: #e84d8a;
+      --negative: #c23952;
+      --warning: #e38b22;
+      --border: #e5dff0;
+      --shadow: 0 10px 30px rgba(66, 36, 89, .12);
+      --radius: 22px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(159, 103, 255, .16), transparent 34%),
+        linear-gradient(180deg, #faf8fd, var(--bg));
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .hidden { display: none !important; }
+
+    .screen {
+      min-height: 100vh;
+      padding: max(18px, env(safe-area-inset-top)) 16px calc(24px + var(--safe-bottom));
+    }
+
+    .auth-screen {
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(232, 77, 138, .24), transparent 35%),
+        radial-gradient(circle at 90% 10%, rgba(124, 58, 237, .25), transparent 34%),
+        #17101f;
+      color: white;
+    }
+
+    .auth-card {
+      width: min(430px, 100%);
+      padding: 28px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 28px;
+      background: rgba(255,255,255,.10);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      text-align: center;
+    }
+
+    .lock-icon {
+      width: 74px;
+      height: 74px;
+      margin: 0 auto 14px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      background: rgba(255,255,255,.14);
+      font-size: 34px;
+    }
+
+    .auth-card h1 { margin: 0 0 8px; font-size: 1.75rem; }
+    .auth-card p { color: rgba(255,255,255,.72); line-height: 1.5; }
+
+    .pin-dots {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 22px 0;
+    }
+
+    .pin-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.5);
+      transition: .15s ease;
+    }
+    .pin-dot.filled { background: white; border-color: white; transform: scale(1.08); }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .key {
+      min-height: 58px;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255,255,255,.12);
+      color: white;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .key:active { transform: scale(.97); background: rgba(255,255,255,.22); }
+
+    .auth-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      min-height: 46px;
+      border: 0;
+      border-radius: 15px;
+      padding: 0 17px;
+      font-weight: 700;
+      transition: .15s ease;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { color: white; background: linear-gradient(135deg, var(--primary), var(--primary-2)); }
+    .btn-secondary { color: var(--text); background: #f2edf8; border: 1px solid var(--border); }
+    .btn-danger { color: white; background: var(--negative); }
+    .btn-ghost { color: inherit; background: transparent; border: 1px solid currentColor; }
+    .btn-small { min-height: 38px; padding: 0 13px; font-size: .9rem; }
+    .btn-icon { width: 44px; padding: 0; }
+
+    .auth-error {
+      min-height: 22px;
+      color: #ffd0d7;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    header.app-header {
+      max-width: 1180px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand h1 { margin: 0; font-size: clamp(1.45rem, 4vw, 2rem); }
+    .brand small { color: var(--muted); }
+
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: .85rem;
+      box-shadow: var(--shadow);
+    }
+
+    .status-dot {
+      width: 9px; height: 9px; border-radius: 50%; background: #31b46d;
+    }
+    .status-dot.offline { background: #c8a02c; }
+
+    .app-grid {
+      max-width: 1180px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(310px, .75fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .card {
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .card-header h2 { margin: 0; font-size: 1.08rem; }
+    .card-body { padding: 18px; }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .chip {
+      min-height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0 14px;
+      background: white;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .chip.active { color: white; border-color: transparent; background: var(--primary); }
+
+    .items-list {
+      display: grid;
+      gap: 10px;
+      min-height: 420px;
+      align-content: start;
+    }
+
+    .empty-state {
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 26px;
+      border: 2px dashed var(--border);
+      border-radius: 18px;
+    }
+
+    .item-row {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: #fff;
+    }
+
+    .item-icon {
+      width: 46px; height: 46px;
+      display: grid; place-items: center;
+      border-radius: 15px;
+      background: #f3eaf8;
+      font-size: 1.4rem;
+    }
+
+    .item-main strong { display: block; }
+    .item-main small { color: var(--muted); }
+    .item-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 800;
+      background: #f4eff8;
+      color: var(--muted);
+    }
+
+    .register-btn {
+      min-width: 50px;
+      height: 44px;
+      border: 0;
+      border-radius: 14px;
+      background: #f6e8ef;
+      font-size: 1.25rem;
+    }
+
+    .tanks-wrapper {
+      min-height: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(110px, 1fr));
+      gap: 20px;
+      align-items: end;
+      padding: 18px;
+    }
+
+    .tank-card { text-align: center; }
+    .tank-title { font-weight: 800; margin-bottom: 10px; }
+
+    .tank {
+      position: relative;
+      width: min(110px, 100%);
+      height: 350px;
+      margin: auto;
+      border: 5px solid rgba(70,47,85,.5);
+      border-radius: 52px 52px 34px 34px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.58), rgba(255,255,255,.16)),
+        rgba(236,229,243,.35);
+      overflow: hidden;
+      box-shadow: inset 12px 0 22px rgba(255,255,255,.55), inset -8px 0 16px rgba(64,30,86,.08);
+    }
+
+    .tank::before {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      top: 16px; left: 20px;
+      width: 12px; height: 230px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.42);
+    }
+
+    .liquid {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      min-height: 8px;
+      transition: height .45s ease;
+      display: grid;
+      place-items: start center;
+      padding-top: 14px;
+      font-size: 2rem;
+    }
+
+    .liquid.positive {
+      background: linear-gradient(180deg, rgba(244,112,166,.72), rgba(213,53,121,.9));
+    }
+    .liquid.negative {
+      background: linear-gradient(180deg, rgba(215,92,112,.72), rgba(167,42,65,.92));
+    }
+
+    .tank-count {
+      margin-top: 12px;
+      font-size: 1.4rem;
+      font-weight: 900;
+    }
+    .tank-sub { color: var(--muted); font-size: .84rem; }
+
+    .bottom-actions {
+      max-width: 1180px;
+      margin: 18px auto 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .storage-card {
+      max-width: 1180px;
+      margin: 14px auto 0;
+      padding: 14px 16px;
+      display: grid;
+      gap: 8px;
+      border-radius: 18px;
+      background: white;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .storage-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .progress {
+      height: 9px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #eee8f2;
+    }
+    .progress > div { height: 100%; background: var(--primary); transition: width .3s; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      padding: 16px;
+      display: grid;
+      place-items: center;
+      background: rgba(24, 15, 31, .64);
+      backdrop-filter: blur(7px);
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      border-radius: 24px;
+      background: white;
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+    }
+
+    .modal-header, .modal-footer {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-footer { border-top: 1px solid var(--border); border-bottom: 0; }
+    .modal-body { padding: 18px; }
+    .modal h3 { margin: 0; }
+
+    .field { display: grid; gap: 7px; margin-bottom: 15px; }
+    .field label { font-size: .88rem; font-weight: 800; color: var(--muted); }
+    .field input {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 0 13px;
+      color: var(--text);
+      background: white;
+    }
+
+    .switch-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    .switch {
+      appearance: none;
+      width: 50px; height: 30px;
+      padding: 3px;
+      border-radius: 99px;
+      background: #cfc5d7;
+      transition: .2s;
+    }
+    .switch::before {
+      content: "";
+      display: block;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 2px 7px rgba(0,0,0,.25);
+      transition: .2s;
+    }
+    .switch:checked { background: var(--primary); }
+    .switch:checked::before { transform: translateX(20px); }
+
+    .rating-options { display: grid; gap: 12px; }
+    .hearts-row {
+      display: flex;
+      gap: 7px;
+      justify-content: center;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fffafd;
+    }
+
+    .heart {
+      border: 0;
+      background: transparent;
+      font-size: 2rem;
+      opacity: .32;
+      filter: grayscale(1);
+      transition: .15s;
+    }
+    .heart.active { opacity: 1; filter: none; transform: scale(1.06); }
+
+    .negative-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .choice {
+      min-height: 52px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: white;
+      font-weight: 800;
+    }
+    .choice.active {
+      color: white;
+      border-color: transparent;
+      background: var(--negative);
+    }
+
+    .history-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: var(--bg);
+      overflow: auto;
+      padding: max(14px, env(safe-area-inset-top)) 14px calc(22px + var(--safe-bottom));
+    }
+
+    .history-shell { max-width: 1180px; margin: auto; }
+    .history-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0 14px;
+      background: linear-gradient(var(--bg) 75%, transparent);
+    }
+
+    .history-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .history-filters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 14px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 18px;
+      background: white;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    table { width: 100%; border-collapse: collapse; min-width: 850px; }
+    th, td { padding: 13px 12px; border-bottom: 1px solid var(--border); text-align: left; font-size: .9rem; }
+    th { position: sticky; top: 0; background: #f4eff8; z-index: 1; }
+    td.center, th.center { text-align: center; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(24px + var(--safe-bottom));
+      transform: translateX(-50%) translateY(130px);
+      z-index: 300;
+      max-width: calc(100vw - 32px);
+      padding: 12px 16px;
+      border-radius: 14px;
+      color: white;
+      background: #25192e;
+      box-shadow: 0 12px 36px rgba(0,0,0,.28);
+      transition: .25s ease;
+      text-align: center;
+      font-weight: 700;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 780px) {
+      .app-grid { grid-template-columns: 1fr; }
+      .tanks-wrapper { min-height: 420px; }
+      .tank { height: 270px; }
+      .bottom-actions { grid-template-columns: 1fr 1fr; }
+      .history-filters { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 470px) {
+      .screen { padding-left: 10px; padding-right: 10px; }
+      header.app-header { align-items: flex-start; }
+      .header-actions .status-pill { display: none; }
+      .card-header, .card-body { padding-left: 14px; padding-right: 14px; }
+      .item-row { grid-template-columns: 42px minmax(0,1fr) 46px; padding: 10px; }
+      .item-icon { width: 42px; height: 42px; }
+      .tanks-wrapper { gap: 10px; padding: 12px; }
+      .tank { width: 92px; height: 240px; border-width: 4px; }
+      .bottom-actions { gap: 8px; }
+      .bottom-actions .btn { padding: 0 10px; }
+      .negative-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section id="authScreen" class="screen auth-screen">
+    <div class="auth-card">
+      <div class="lock-icon">🔐</div>
+      <h1 id="authTitle">Acceso protegido</h1>
+      <p id="authText">Ingresa tu clave numérica de 6 dígitos.</p>
+      <div id="pinDots" class="pin-dots" aria-label="Clave ingresada"></div>
+      <div id="authError" class="auth-error" role="alert"></div>
+      <div id="keypad" class="keypad" aria-label="Teclado numérico"></div>
+      <div class="auth-actions">
+        <button id="biometricBtn" class="btn btn-ghost hidden">Usar Face ID / biometría</button>
+      </div>
+    </div>
+  </section>
+
+  <main id="appScreen" class="screen hidden">
+    <header class="app-header">
+      <div class="brand">
+        <h1>Registro de Relación</h1>
+        <small id="periodLabel">Resumen de todos los registros</small>
+      </div>
+      <div class="header-actions">
+        <span class="status-pill"><span id="connectionDot" class="status-dot"></span><span id="connectionText">En línea</span></span>
+        <button id="settingsBtn" class="btn btn-secondary btn-icon" aria-label="Configuración">⚙️</button>
+        <button id="lockBtn" class="btn btn-secondary btn-icon" aria-label="Bloquear">🔒</button>
+      </div>
+    </header>
+
+    <section class="app-grid">
+      <article class="card">
+        <div class="card-header">
+          <h2>Registrar eventos</h2>
+          <button id="addItemTopBtn" class="btn btn-primary btn-small">+ Nuevo ítem</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-row">
+            <button class="chip active" data-period="all">Todos</button>
+            <button class="chip" data-period="today">Hoy</button>
+            <button class="chip" data-period="7d">7 días</button>
+            <button class="chip" data-period="30d">30 días</button>
+          </div>
+          <div id="itemsList" class="items-list"></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h2>Balance emocional</h2>
+          <span class="badge" id="recordCountBadge">0 registros</span>
+        </div>
+        <div class="tanks-wrapper">
+          <div class="tank-card">
+            <div class="tank-title">Positivos</div>
+            <div class="tank">
+              <div id="positiveLiquid" class="liquid positive"><span>💗</span></div>
+            </div>
+            <div id="positiveCount" class="tank-count">0</div>
+            <div class="tank-sub">corazones acumulados</div>
+          </div>
+          <div class="tank-card">
+            <div class="tank-title">Negativos</div>
+            <div class="tank">
+              <div id="negativeLiquid" class="liquid negative"><span>💔</span></div>
+            </div>
+            <div id="negativeCount" class="tank-count">0</div>
+            <div class="tank-sub">eventos negativos</div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="bottom-actions">
+      <button id="addItemBtn" class="btn btn-primary">Nuevo ítem</button>
+      <button id="historyBtn" class="btn btn-secondary">Historial</button>
+    </section>
+
+    <section class="storage-card">
+      <div class="storage-line">
+        <strong>Almacenamiento local</strong>
+        <span id="storageText">Calculando...</span>
+      </div>
+      <div class="progress"><div id="storageBar" style="width:0%"></div></div>
+      <div class="storage-line">
+        <span id="storageAdvice">Los registros se guardan automáticamente en este dispositivo.</span>
+        <button id="exportQuickBtn" class="btn btn-secondary btn-small">Respaldar JSON</button>
+      </div>
+    </section>
+  </main>
+
+  <section id="historyScreen" class="history-screen hidden" aria-label="Historial de registros">
+    <div class="history-shell">
+      <div class="history-toolbar">
+        <div>
+          <h2 style="margin:0">Historial</h2>
+          <small id="historyCount">0 registros</small>
+        </div>
+        <div class="history-actions">
+          <button id="syncHistoryBtn" class="btn btn-secondary btn-small">Respaldar ahora</button>
+          <button id="shareHistoryBtn" class="btn btn-secondary btn-small">Compartir</button>
+          <button id="exportCsvBtn" class="btn btn-secondary btn-small">CSV</button>
+          <button id="closeHistoryBtn" class="btn btn-primary btn-small">Volver</button>
+        </div>
+      </div>
+
+      <div class="history-filters">
+        <div class="field" style="margin:0">
+          <label for="historyFrom">Desde</label>
+          <input id="historyFrom" type="date">
+        </div>
+        <div class="field" style="margin:0">
+          <label for="historyTo">Hasta</label>
+          <input id="historyTo" type="date">
+        </div>
+        <div class="field" style="margin:0">
+          <label for="historySearch">Buscar ítem</label>
+          <input id="historySearch" type="search" placeholder="Ej.: Beso">
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Ítem</th>
+              <th class="center">Corazones</th>
+              <th class="center">Rechazo</th>
+              <th class="center">Conflicto</th>
+              <th class="center">Confidencial</th>
+              <th class="center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div id="itemModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header"><h3>Nuevo tipo de registro</h3><button class="btn btn-secondary btn-icon" data-close="itemModal">✕</button></div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="itemName">Nombre del ítem</label>
+          <input id="itemName" maxlength="60" placeholder="Ej.: Un beso">
+        </div>
+        <div class="field">
+          <label for="itemIcon">Icono o emoji</label>
+          <input id="itemIcon" maxlength="4" placeholder="💋">
+        </div>
+        <label class="switch-line">
+          <span><strong>Confidencial</strong><br><small>No aparecerá al compartir información.</small></span>
+          <input id="itemConfidential" class="switch" type="checkbox">
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="itemModal">Cancelar</button>
+        <button id="saveItemBtn" class="btn btn-primary">Guardar ítem</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="recordModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header"><h3 id="recordTitle">Registrar evento</h3><button class="btn btn-secondary btn-icon" data-close="recordModal">✕</button></div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="recordDateTime">Fecha y hora del evento</label>
+          <input id="recordDateTime" type="datetime-local">
+        </div>
+        <div class="rating-options">
+          <div>
+            <div style="text-align:center;font-weight:800;margin-bottom:8px">Valoración positiva</div>
+            <div id="heartsRow" class="hearts-row" aria-label="Seleccionar corazones"></div>
+          </div>
+          <div class="negative-row">
+            <button id="rejectionBtn" class="choice">💔 Rechazo</button>
+            <button id="conflictBtn" class="choice">⚡ Conflicto / discusión</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="recordModal">Cancelar</button>
+        <button id="saveRecordBtn" class="btn btn-primary">Guardar registro</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header"><h3>Configuración</h3><button class="btn btn-secondary btn-icon" data-close="settingsModal">✕</button></div>
+      <div class="modal-body">
+        <button id="setupBiometricBtn" class="btn btn-secondary" style="width:100%;margin-bottom:12px">Configurar Face ID / biometría</button>
+        <button id="changePinBtn" class="btn btn-secondary" style="width:100%;margin-bottom:12px">Cambiar clave de 6 dígitos</button>
+        <button id="exportSettingsBtn" class="btn btn-secondary" style="width:100%;margin-bottom:12px">Exportar respaldo completo</button>
+        <label class="btn btn-secondary" style="width:100%;display:grid;place-items:center;margin-bottom:12px">
+          Importar respaldo
+          <input id="importInput" type="file" accept=".json,application/json" hidden>
+        </label>
+        <button id="clearAllBtn" class="btn btn-danger" style="width:100%">Eliminar todos los datos</button>
+        <p style="color:var(--muted);font-size:.85rem;line-height:1.5;margin-bottom:0">
+          Versión 0.1.0. La conexión con Firebase y el modo espectador quedan preparados para una fase posterior.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script>
+    "use strict";
+
+    const APP_VERSION = "0.1.0";
+    const STORAGE_KEY = "relationshipTracker_v1";
+    const AUTH_KEY = "relationshipTracker_auth_v1";
+    const CREDENTIAL_KEY = "relationshipTracker_webauthn_credential";
+    const APP_BOOTSTRAP_CODE = "246810"; // Cambiar antes de publicar.
+
+    const state = {
+      items: [],
+      records: [],
+      period: "all",
+      activeItemId: null,
+      rating: { hearts: 0, rejection: false, conflict: false },
+      authenticated: false
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const qsAll = (selector) => [...document.querySelectorAll(selector)];
+
+    let authMode = "login";
+    let pinBuffer = "";
+    let pendingFirstPin = "";
+    let toastTimer;
+
+    function defaultState() {
+      return { items: [], records: [], period: "all", version: APP_VERSION };
+    }
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        Object.assign(state, defaultState(), saved || {});
+      } catch {
+        Object.assign(state, defaultState());
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        items: state.items,
+        records: state.records,
+        period: state.period,
+        version: APP_VERSION
+      }));
+      updateStorageInfo();
+    }
+
+    async function sha256(value) {
+      const data = new TextEncoder().encode(value);
+      const hash = await crypto.subtle.digest("SHA-256", data);
+      return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function getAuth() {
+      try { return JSON.parse(localStorage.getItem(AUTH_KEY) || "null"); }
+      catch { return null; }
+    }
+
+    function setAuth(auth) {
+      localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    }
+
+    function initAuth() {
+      const auth = getAuth();
+      if (!auth) {
+        authMode = "bootstrap";
+        $("authTitle").textContent = "Activar aplicación";
+        $("authText").textContent = "Ingresa la clave base de la aplicación para crear tu acceso personal.";
+      } else {
+        authMode = "login";
+        $("authTitle").textContent = "Acceso protegido";
+        $("authText").textContent = "Ingresa tu clave numérica de 6 dígitos.";
+        if (localStorage.getItem(CREDENTIAL_KEY) && window.PublicKeyCredential) {
+          $("biometricBtn").classList.remove("hidden");
+        }
+      }
+      renderPinDots();
+    }
+
+    function renderKeypad() {
+      const keys = ["1","2","3","4","5","6","7","8","9","⌫","0","✓"];
+      $("keypad").innerHTML = "";
+      keys.forEach(k => {
+        const b = document.createElement("button");
+        b.className = "key";
+        b.textContent = k;
+        b.type = "button";
+        b.addEventListener("click", () => handleKey(k));
+        $("keypad").appendChild(b);
+      });
+    }
+
+    function renderPinDots() {
+      $("pinDots").innerHTML = "";
+      for (let i = 0; i < 6; i++) {
+        const dot = document.createElement("span");
+        dot.className = "pin-dot" + (i < pinBuffer.length ? " filled" : "");
+        $("pinDots").appendChild(dot);
+      }
+    }
+
+    async function handleKey(key) {
+      $("authError").textContent = "";
+      if (key === "⌫") pinBuffer = pinBuffer.slice(0, -1);
+      else if (key === "✓") await submitPin();
+      else if (pinBuffer.length < 6) pinBuffer += key;
+      renderPinDots();
+      if (pinBuffer.length === 6 && key !== "✓") await submitPin();
+    }
+
+    async function submitPin() {
+      if (pinBuffer.length !== 6) {
+        $("authError").textContent = "La clave debe tener 6 dígitos.";
+        return;
+      }
+
+      if (authMode === "bootstrap") {
+        if (pinBuffer !== APP_BOOTSTRAP_CODE) {
+          authError("Clave base incorrecta.");
+          return;
+        }
+        pinBuffer = "";
+        authMode = "create";
+        $("authTitle").textContent = "Crea tu clave";
+        $("authText").textContent = "Define una clave personal de 6 dígitos.";
+        renderPinDots();
+        return;
+      }
+
+      if (authMode === "create") {
+        pendingFirstPin = pinBuffer;
+        pinBuffer = "";
+        authMode = "confirm";
+        $("authTitle").textContent = "Confirma tu clave";
+        $("authText").textContent = "Vuelve a ingresar la misma clave.";
+        renderPinDots();
+        return;
+      }
+
+      if (authMode === "confirm") {
+        if (pinBuffer !== pendingFirstPin) {
+          pendingFirstPin = "";
+          pinBuffer = "";
+          authMode = "create";
+          $("authTitle").textContent = "Crea tu clave";
+          $("authText").textContent = "Las claves no coincidieron. Inténtalo nuevamente.";
+          renderPinDots();
+          return;
+        }
+        setAuth({ pinHash: await sha256(pinBuffer), createdAt: new Date().toISOString() });
+        unlockApp();
+        return;
+      }
+
+      if (authMode === "change-old") {
+        const auth = getAuth();
+        if (!auth || await sha256(pinBuffer) !== auth.pinHash) {
+          authError("La clave actual no es correcta.");
+          return;
+        }
+        pinBuffer = "";
+        authMode = "create";
+        $("authTitle").textContent = "Nueva clave";
+        $("authText").textContent = "Ingresa tu nueva clave de 6 dígitos.";
+        renderPinDots();
+        return;
+      }
+
+      const auth = getAuth();
+      if (auth && await sha256(pinBuffer) === auth.pinHash) unlockApp();
+      else authError("Clave incorrecta.");
+    }
+
+    function authError(message) {
+      $("authError").textContent = message;
+      pinBuffer = "";
+      renderPinDots();
+      navigator.vibrate?.(100);
+    }
+
+    function unlockApp() {
+      state.authenticated = true;
+      pinBuffer = "";
+      $("authScreen").classList.add("hidden");
+      $("appScreen").classList.remove("hidden");
+      renderAll();
+    }
+
+    function lockApp() {
+      state.authenticated = false;
+      pinBuffer = "";
+      authMode = "login";
+      $("appScreen").classList.add("hidden");
+      $("historyScreen").classList.add("hidden");
+      $("authScreen").classList.remove("hidden");
+      $("authTitle").textContent = "Acceso protegido";
+      $("authText").textContent = "Ingresa tu clave numérica de 6 dígitos.";
+      renderPinDots();
+    }
+
+    function showModal(id) { $(id).classList.remove("hidden"); }
+    function hideModal(id) { $(id).classList.add("hidden"); }
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      $("toast").textContent = message;
+      $("toast").classList.add("show");
+      toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2400);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function uid() {
+      return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function localDateTimeValue(date = new Date()) {
+      const offset = date.getTimezoneOffset();
+      return new Date(date.getTime() - offset * 60000).toISOString().slice(0,16);
+    }
+
+    function formatDate(iso) {
+      return new Intl.DateTimeFormat("es-CL", {
+        dateStyle: "short", timeStyle: "short"
+      }).format(new Date(iso));
+    }
+
+    function filteredRecords() {
+      const now = new Date();
+      let from = null;
+      if (state.period === "today") from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (state.period === "7d") from = new Date(now.getTime() - 7 * 86400000);
+      if (state.period === "30d") from = new Date(now.getTime() - 30 * 86400000);
+      return state.records.filter(r => !from || new Date(r.dateTime) >= from);
+    }
+
+    function renderAll() {
+      renderItems();
+      renderSummary();
+      updatePeriodUI();
+      updateStorageInfo();
+    }
+
+    function renderItems() {
+      const list = $("itemsList");
+      if (!state.items.length) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div>
+              <div style="font-size:2.5rem">📝</div>
+              <h3>Aún no hay ítems</h3>
+              <p>Crea tu primer tipo de registro, por ejemplo “Un beso”, “Un abrazo” o “Intimidad”.</p>
+              <button class="btn btn-primary" onclick="document.getElementById('addItemBtn').click()">Crear primer ítem</button>
+            </div>
+          </div>`;
+        return;
+      }
+
+      const periodRecords = filteredRecords();
+      list.innerHTML = state.items.map(item => {
+        const itemRecords = periodRecords.filter(r => r.itemId === item.id);
+        const hearts = itemRecords.reduce((s,r) => s + (r.hearts || 0), 0);
+        const negatives = itemRecords.filter(r => r.rejection || r.conflict).length;
+        return `
+          <div class="item-row">
+            <div class="item-icon">${escapeHtml(item.icon || "📝")}</div>
+            <div class="item-main">
+              <strong>${escapeHtml(item.name)}</strong>
+              <small>${itemRecords.length} registro${itemRecords.length === 1 ? "" : "s"} en el período</small>
+              <div class="item-badges">
+                <span class="badge">💗 ${hearts}</span>
+                <span class="badge">💔 ${negatives}</span>
+                ${item.confidential ? '<span class="badge">🔒 Confidencial</span>' : ""}
+              </div>
+            </div>
+            <button class="register-btn" data-item-id="${item.id}" aria-label="Registrar ${escapeHtml(item.name)}">＋</button>
+          </div>`;
+      }).join("");
+
+      qsAll("[data-item-id]").forEach(btn => btn.addEventListener("click", () => openRecordModal(btn.dataset.itemId)));
+    }
+
+    function renderSummary() {
+      const records = filteredRecords();
+      const positive = records.reduce((sum, r) => sum + (r.hearts || 0), 0);
+      const negative = records.filter(r => r.rejection || r.conflict).length;
+      const max = Math.max(positive, negative, 10);
+
+      $("positiveCount").textContent = positive;
+      $("negativeCount").textContent = negative;
+      $("recordCountBadge").textContent = `${records.length} registro${records.length === 1 ? "" : "s"}`;
+      $("positiveLiquid").style.height = `${Math.max(3, (positive / max) * 100)}%`;
+      $("negativeLiquid").style.height = `${Math.max(3, (negative / max) * 100)}%`;
+    }
+
+    function updatePeriodUI() {
+      qsAll("[data-period]").forEach(chip => chip.classList.toggle("active", chip.dataset.period === state.period));
+      const labels = { all: "Resumen de todos los registros", today: "Resumen de hoy", "7d": "Resumen de los últimos 7 días", "30d": "Resumen de los últimos 30 días" };
+      $("periodLabel").textContent = labels[state.period];
+    }
+
+    function openItemModal() {
+      $("itemName").value = "";
+      $("itemIcon").value = "";
+      $("itemConfidential").checked = false;
+      showModal("itemModal");
+      setTimeout(() => $("itemName").focus(), 100);
+    }
+
+    function saveItem() {
+      const name = $("itemName").value.trim();
+      if (!name) return showToast("Ingresa un nombre para el ítem.");
+      state.items.push({
+        id: uid(),
+        name,
+        icon: $("itemIcon").value.trim() || "📝",
+        confidential: $("itemConfidential").checked,
+        createdAt: new Date().toISOString()
+      });
+      saveState();
+      hideModal("itemModal");
+      renderAll();
+      showToast("Ítem creado.");
+    }
+
+    function openRecordModal(itemId) {
+      const item = state.items.find(i => i.id === itemId);
+      if (!item) return;
+      state.activeItemId = itemId;
+      state.rating = { hearts: 0, rejection: false, conflict: false };
+      $("recordTitle").textContent = `Registrar: ${item.name}`;
+      $("recordDateTime").value = localDateTimeValue();
+      renderRating();
+      showModal("recordModal");
+    }
+
+    function renderRating() {
+      $("heartsRow").innerHTML = [1,2,3,4,5].map(n =>
+        `<button class="heart ${n <= state.rating.hearts ? "active" : ""}" data-heart="${n}" aria-label="${n} corazones">💗</button>`
+      ).join("");
+      qsAll("[data-heart]").forEach(btn => btn.addEventListener("click", () => {
+        state.rating.hearts = Number(btn.dataset.heart);
+        state.rating.rejection = false;
+        state.rating.conflict = false;
+        renderRating();
+      }));
+      $("rejectionBtn").classList.toggle("active", state.rating.rejection);
+      $("conflictBtn").classList.toggle("active", state.rating.conflict);
+    }
+
+    function saveRecord() {
+      const item = state.items.find(i => i.id === state.activeItemId);
+      const dateTime = $("recordDateTime").value;
+      const { hearts, rejection, conflict } = state.rating;
+      if (!item || !dateTime) return showToast("Completa la fecha y hora.");
+      if (!hearts && !rejection && !conflict) return showToast("Selecciona corazones, rechazo o conflicto.");
+
+      state.records.push({
+        id: uid(),
+        itemId: item.id,
+        itemName: item.name,
+        dateTime: new Date(dateTime).toISOString(),
+        hearts,
+        rejection,
+        conflict,
+        confidential: !!item.confidential,
+        createdAt: new Date().toISOString()
+      });
+      saveState();
+      hideModal("recordModal");
+      renderAll();
+      showToast("Registro guardado.");
+    }
+
+    function historyFilteredRecords() {
+      const from = $("historyFrom").value ? new Date($("historyFrom").value + "T00:00:00") : null;
+      const to = $("historyTo").value ? new Date($("historyTo").value + "T23:59:59") : null;
+      const search = $("historySearch").value.trim().toLowerCase();
+      return [...state.records]
+        .filter(r => (!from || new Date(r.dateTime) >= from) && (!to || new Date(r.dateTime) <= to))
+        .filter(r => !search || r.itemName.toLowerCase().includes(search))
+        .sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime));
+    }
+
+    function openHistory() {
+      $("historyScreen").classList.remove("hidden");
+      renderHistory();
+      showToast("Sugerencia: respalda los registros antes de revisar el historial.");
+    }
+
+    function renderHistory() {
+      const records = historyFilteredRecords();
+      $("historyCount").textContent = `${records.length} registro${records.length === 1 ? "" : "s"}`;
+      $("historyBody").innerHTML = records.length ? records.map(r => `
+        <tr>
+          <td>${formatDate(r.dateTime)}</td>
+          <td>${escapeHtml(r.itemName)}</td>
+          <td class="center">${r.hearts || 0}</td>
+          <td class="center">${r.rejection ? "Sí" : "No"}</td>
+          <td class="center">${r.conflict ? "Sí" : "No"}</td>
+          <td class="center">${r.confidential ? "Sí" : "No"}</td>
+          <td class="center"><button class="btn btn-danger btn-small" data-delete-record="${r.id}">Eliminar</button></td>
+        </tr>`).join("") : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">No hay registros para los filtros seleccionados.</td></tr>`;
+
+      qsAll("[data-delete-record]").forEach(btn => btn.addEventListener("click", () => {
+        if (!confirm("¿Eliminar este registro? Esta acción no se puede deshacer.")) return;
+        state.records = state.records.filter(r => r.id !== btn.dataset.deleteRecord);
+        saveState();
+        renderHistory();
+        renderAll();
+      }));
+    }
+
+    function downloadFile(name, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function exportJSON() {
+      const payload = {
+        app: "Registro de Relación",
+        version: APP_VERSION,
+        exportedAt: new Date().toISOString(),
+        items: state.items,
+        records: state.records
+      };
+      downloadFile(`registro-relacion-${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(payload, null, 2), "application/json");
+      showToast("Respaldo JSON generado.");
+    }
+
+    function exportCSV() {
+      const rows = [["Fecha y hora","Item","Cantidad Corazones","Flag rechazo","Flag conflicto","Confidencial"]];
+      historyFilteredRecords().forEach(r => rows.push([
+        formatDate(r.dateTime), r.itemName, r.hearts || 0, r.rejection ? "Sí" : "No", r.conflict ? "Sí" : "No", r.confidential ? "Sí" : "No"
+      ]));
+      const csv = "\uFEFF" + rows.map(row => row.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+      downloadFile(`historial-${new Date().toISOString().slice(0,10)}.csv`, csv, "text/csv;charset=utf-8");
+    }
+
+    async function shareHistory() {
+      const visible = historyFilteredRecords().filter(r => !r.confidential);
+      const text = visible.length
+        ? visible.map(r => `${formatDate(r.dateTime)} | ${r.itemName} | 💗 ${r.hearts || 0} | Rechazo: ${r.rejection ? "Sí" : "No"} | Conflicto: ${r.conflict ? "Sí" : "No"}`).join("\n")
+        : "No hay registros no confidenciales para compartir.";
+      try {
+        if (navigator.share) await navigator.share({ title: "Historial de registros", text });
+        else {
+          await navigator.clipboard.writeText(text);
+          showToast("Historial copiado al portapapeles.");
+        }
+      } catch (e) {
+        if (e.name !== "AbortError") showToast("No fue posible compartir.");
+      }
+    }
+
+    async function updateStorageInfo() {
+      const storedBytes = new Blob([localStorage.getItem(STORAGE_KEY) || ""]).size;
+      let quota = 5 * 1024 * 1024;
+      let usage = storedBytes;
+      try {
+        if (navigator.storage?.estimate) {
+          const estimate = await navigator.storage.estimate();
+          quota = estimate.quota || quota;
+          usage = Math.max(storedBytes, estimate.usage || 0);
+        }
+      } catch {}
+      const pct = Math.min(100, (usage / quota) * 100);
+      $("storageBar").style.width = pct.toFixed(2) + "%";
+      $("storageText").textContent = `${(usage / 1024).toFixed(1)} KB usados · ${pct.toFixed(2)}% estimado`;
+      if (pct >= 80) {
+        $("storageAdvice").textContent = "Se alcanzó el 80%. Genera un respaldo y sincroniza con la base externa.";
+        $("storageBar").style.background = "var(--negative)";
+      } else if (pct >= 70) {
+        $("storageAdvice").textContent = "Queda menos del 30% estimado. Conviene respaldar pronto.";
+        $("storageBar").style.background = "var(--warning)";
+      } else {
+        $("storageAdvice").textContent = "Los registros se guardan automáticamente en este dispositivo.";
+        $("storageBar").style.background = "var(--primary)";
+      }
+    }
+
+    async function setupBiometric() {
+      if (!window.PublicKeyCredential || !navigator.credentials) {
+        return showToast("Este navegador no permite autenticación biométrica WebAuthn.");
+      }
+      try {
+        const challenge = crypto.getRandomValues(new Uint8Array(32));
+        const userId = crypto.getRandomValues(new Uint8Array(16));
+        const credential = await navigator.credentials.create({
+          publicKey: {
+            challenge,
+            rp: { name: "Registro de Relación" },
+            user: { id: userId, name: "usuario-local", displayName: "Usuario local" },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+            authenticatorSelection: {
+              authenticatorAttachment: "platform",
+              userVerification: "required",
+              residentKey: "preferred"
+            },
+            timeout: 60000,
+            attestation: "none"
+          }
+        });
+        localStorage.setItem(CREDENTIAL_KEY, JSON.stringify({
+          id: credential.id,
+          rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+        }));
+        $("biometricBtn").classList.remove("hidden");
+        showToast("Biometría configurada en este dispositivo.");
+      } catch (e) {
+        if (e.name !== "NotAllowedError") showToast("No fue posible configurar la biometría.");
+      }
+    }
+
+    async function biometricLogin() {
+      const saved = JSON.parse(localStorage.getItem(CREDENTIAL_KEY) || "null");
+      if (!saved) return;
+      try {
+        const rawId = Uint8Array.from(atob(saved.rawId), c => c.charCodeAt(0));
+        await navigator.credentials.get({
+          publicKey: {
+            challenge: crypto.getRandomValues(new Uint8Array(32)),
+            allowCredentials: [{ id: rawId, type: "public-key" }],
+            userVerification: "required",
+            timeout: 60000
+          }
+        });
+        unlockApp();
+      } catch (e) {
+        if (e.name !== "NotAllowedError") showToast("La autenticación biométrica falló.");
+      }
+    }
+
+    function updateConnection() {
+      const online = navigator.onLine;
+      $("connectionDot").classList.toggle("offline", !online);
+      $("connectionText").textContent = online ? "En línea" : "Modo local";
+    }
+
+    function bindEvents() {
+      $("addItemBtn").addEventListener("click", openItemModal);
+      $("addItemTopBtn").addEventListener("click", openItemModal);
+      $("saveItemBtn").addEventListener("click", saveItem);
+      $("saveRecordBtn").addEventListener("click", saveRecord);
+      $("historyBtn").addEventListener("click", openHistory);
+      $("closeHistoryBtn").addEventListener("click", () => $("historyScreen").classList.add("hidden"));
+      $("shareHistoryBtn").addEventListener("click", shareHistory);
+      $("exportCsvBtn").addEventListener("click", exportCSV);
+      $("syncHistoryBtn").addEventListener("click", exportJSON);
+      $("exportQuickBtn").addEventListener("click", exportJSON);
+      $("exportSettingsBtn").addEventListener("click", exportJSON);
+      $("settingsBtn").addEventListener("click", () => showModal("settingsModal"));
+      $("lockBtn").addEventListener("click", lockApp);
+      $("biometricBtn").addEventListener("click", biometricLogin);
+      $("setupBiometricBtn").addEventListener("click", setupBiometric);
+
+      $("changePinBtn").addEventListener("click", () => {
+        hideModal("settingsModal");
+        $("appScreen").classList.add("hidden");
+        $("authScreen").classList.remove("hidden");
+        authMode = "change-old";
+        pinBuffer = "";
+        $("authTitle").textContent = "Cambiar clave";
+        $("authText").textContent = "Ingresa primero tu clave actual.";
+        renderPinDots();
+      });
+
+      $("rejectionBtn").addEventListener("click", () => {
+        state.rating = { hearts: 0, rejection: !state.rating.rejection, conflict: false };
+        renderRating();
+      });
+
+      $("conflictBtn").addEventListener("click", () => {
+        state.rating = { hearts: 0, rejection: false, conflict: !state.rating.conflict };
+        renderRating();
+      });
+
+      qsAll("[data-close]").forEach(btn => btn.addEventListener("click", () => hideModal(btn.dataset.close)));
+      qsAll(".modal-backdrop").forEach(backdrop => backdrop.addEventListener("click", e => {
+        if (e.target === backdrop) hideModal(backdrop.id);
+      }));
+
+      qsAll("[data-period]").forEach(chip => chip.addEventListener("click", () => {
+        state.period = chip.dataset.period;
+        saveState();
+        renderAll();
+      }));
+
+      ["historyFrom","historyTo","historySearch"].forEach(id => $(id).addEventListener("input", renderHistory));
+
+      $("clearAllBtn").addEventListener("click", () => {
+        if (!confirm("¿Eliminar todos los ítems y registros? Esta acción no se puede deshacer.")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        Object.assign(state, defaultState());
+        hideModal("settingsModal");
+        renderAll();
+        showToast("Todos los datos fueron eliminados.");
+      });
+
+      $("importInput").addEventListener("change", async e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const data = JSON.parse(await file.text());
+          if (!Array.isArray(data.items) || !Array.isArray(data.records)) throw new Error();
+          if (!confirm("La importación reemplazará los datos actuales. ¿Continuar?")) return;
+          state.items = data.items;
+          state.records = data.records;
+          saveState();
+          renderAll();
+          hideModal("settingsModal");
+          showToast("Respaldo importado.");
+        } catch {
+          showToast("El archivo no tiene un formato válido.");
+        } finally {
+          e.target.value = "";
+        }
+      });
+
+      window.addEventListener("online", updateConnection);
+      window.addEventListener("offline", updateConnection);
+      document.addEventListener("visibilitychange", () => {
+        // En una fase posterior se puede activar bloqueo automático por tiempo.
+      });
+    }
+
+    function init() {
+      loadState();
+      renderKeypad();
+      initAuth();
+      bindEvents();
+      updateConnection();
+      renderRating();
+    }
+
+    init();
+  </script>
+</body>
+</html>
