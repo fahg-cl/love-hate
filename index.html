@@ -817,7 +817,7 @@
     const STORAGE_KEY = "relationshipTracker_v1";
     const AUTH_KEY = "relationshipTracker_auth_v1";
     const CREDENTIAL_KEY = "relationshipTracker_webauthn_credential";
-    const APP_BOOTSTRAP_CODE = "246810"; // Cambiar antes de publicar.
+    const AUTH_API_URL = "https://registro-relacion-auth.fahg76.workers.dev";
 
     const state = {
       items: [],
@@ -836,6 +836,31 @@
     let pinBuffer = "";
     let pendingFirstPin = "";
     let toastTimer;
+
+    async function validateBootstrapCode(code) {
+      try {
+        const response = await fetch(AUTH_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            code
+          })
+        });
+
+        if (!response.ok) {
+          return false;
+        }
+
+        const result = await response.json();
+
+        return result.ok === true;
+      } catch (error) {
+        console.error("Error al validar la clave base:", error);
+        return false;
+      }
+    }
 
     function defaultState() {
       return { items: [], records: [], period: "all", version: APP_VERSION };
@@ -864,6 +889,35 @@
       const data = new TextEncoder().encode(value);
       const hash = await crypto.subtle.digest("SHA-256", data);
       return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function validateBootstrapCode(code) {
+      try {
+        const response = await fetch(AUTH_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            code: code
+          })
+        });
+
+        if (!response.ok) {
+          return false;
+        }
+
+        const result = await response.json();
+
+        return result.ok === true;
+      } catch (error) {
+        console.error(
+          "No fue posible validar la clave base:",
+          error
+        );
+
+        return false;
+      }
     }
 
     function getAuth() {
@@ -930,16 +984,29 @@
       }
 
       if (authMode === "bootstrap") {
-        if (pinBuffer !== APP_BOOTSTRAP_CODE) {
-          authError("Clave base incorrecta.");
+        if (authMode === "bootstrap") {
+          $("authText").textContent = "Validando clave base...";
+
+          const validBootstrapCode =
+            await validateBootstrapCode(pinBuffer);
+
+          if (!validBootstrapCode) {
+            authError("Clave base incorrecta o servicio no disponible.");
+            $("authText").textContent =
+              "Ingresa la clave base de la aplicación.";
+            return;
+          }
+
+          pinBuffer = "";
+          authMode = "create";
+
+          $("authTitle").textContent = "Crea tu clave";
+          $("authText").textContent =
+            "Define una clave personal de 6 dígitos.";
+
+          renderPinDots();
           return;
         }
-        pinBuffer = "";
-        authMode = "create";
-        $("authTitle").textContent = "Crea tu clave";
-        $("authText").textContent = "Define una clave personal de 6 dígitos.";
-        renderPinDots();
-        return;
       }
 
       if (authMode === "create") {
