@@ -2,5 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "registro-relacion-auth",
   "main": "src/index.js",
-  "compatibility_date": "2026-07-30"
+  "compatibility_date": "2026-07-30",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "love-hate-backups",
+      "database_id": "f9786348-78d3-4c26-a5fe-d05358111382"
+    }
+  ]
 }

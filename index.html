@@ -698,8 +698,9 @@
           <small id="historyCount">0 registros</small>
         </div>
         <div class="history-actions">
-          <button id="syncHistoryBtn" class="btn btn-secondary btn-small">Respaldar ahora</button>
-          <button id="shareHistoryBtn" class="btn btn-secondary btn-small">Compartir</button>
+          <button id="syncHistoryBtn" class="btn btn-secondary btn-small">☁️ Respaldar ahora</button>
+          <button id="loadCloudBackupBtn" class="btn btn-secondary btn-small">⬇️ Cargar respaldo </button>
+          <button id="shareHistoryBtn" class="btn btn-secondary btn-small">Compartir </button>
           <button id="exportCsvBtn" class="btn btn-secondary btn-small">CSV</button>
           <button id="closeHistoryBtn" class="btn btn-primary btn-small">Volver</button>
         </div>
@@ -1337,7 +1338,214 @@
         renderAll();
       }));
     }
+function requestCloudCode(actionDescription) {
+  const value = window.prompt(
+    `Ingresa la clave base de 6 dígitos para ${actionDescription}:`
+  );
 
+  if (value === null) {
+    return null;
+  }
+
+  const code = value.trim();
+
+  if (!/^\d{6}$/.test(code)) {
+    showToast(
+      "La clave debe contener exactamente seis dígitos."
+    );
+
+    return null;
+  }
+
+  return code;
+}
+
+async function callCloudflare(path, code, extraBody = {}) {
+  const response = await fetch(
+    `${AUTH_API_URL}${path}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        code,
+        ...extraBody
+      })
+    }
+  );
+
+  let result = {};
+
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error(
+      "Cloudflare respondió con un formato no válido."
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      result.message ||
+      "La operación en Cloudflare no pudo completarse."
+    );
+  }
+
+  return result;
+}
+
+async function backupToCloudflare() {
+  const code = requestCloudCode(
+    "guardar el respaldo"
+  );
+
+  if (!code) {
+    return;
+  }
+
+  const button = $("syncHistoryBtn");
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "Respaldando...";
+
+  const backup = {
+    schemaVersion: 1,
+    appVersion: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+
+    items: state.items,
+    records: state.records,
+
+    settings: {
+      period: state.period
+    }
+  };
+
+  try {
+    const result = await callCloudflare(
+      "/backup",
+      code,
+      {
+        backup
+      }
+    );
+
+    const backupDate = new Intl.DateTimeFormat(
+      "es-CL",
+      {
+        dateStyle: "short",
+        timeStyle: "short"
+      }
+    ).format(new Date(result.updatedAt));
+
+    showToast(
+      `Respaldo guardado: ${result.itemCount} ítems y ` +
+      `${result.recordCount} registros · ${backupDate}`
+    );
+  } catch (error) {
+    console.error(
+      "Error al respaldar en Cloudflare:",
+      error
+    );
+
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function loadBackupFromCloudflare() {
+  const code = requestCloudCode(
+    "cargar el respaldo"
+  );
+
+  if (!code) {
+    return;
+  }
+
+  const button = $("loadCloudBackupBtn");
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "Consultando...";
+
+  try {
+    const result = await callCloudflare(
+      "/restore",
+      code
+    );
+
+    const backup = result.backup;
+
+    if (
+      !backup ||
+      !Array.isArray(backup.items) ||
+      !Array.isArray(backup.records)
+    ) {
+      throw new Error(
+        "El respaldo recuperado no tiene una estructura válida."
+      );
+    }
+
+    const backupDate = new Intl.DateTimeFormat(
+      "es-CL",
+      {
+        dateStyle: "short",
+        timeStyle: "short"
+      }
+    ).format(new Date(result.updatedAt));
+
+    const confirmationMessage =
+      `Se encontró un respaldo del ${backupDate}.\n\n` +
+      `Contiene:\n` +
+      `• ${backup.items.length} ítems\n` +
+      `• ${backup.records.length} registros\n\n` +
+      `Al continuar se reemplazarán los ítems y registros ` +
+      `almacenados actualmente en este dispositivo.\n\n` +
+      `¿Deseas cargar el respaldo?`;
+
+    if (!window.confirm(confirmationMessage)) {
+      return;
+    }
+
+    state.items = backup.items;
+    state.records = backup.records;
+
+    const restoredPeriod =
+      backup.settings?.period;
+
+    if (
+      ["all", "today", "7d", "30d"]
+        .includes(restoredPeriod)
+    ) {
+      state.period = restoredPeriod;
+    }
+
+    state.activeItemId = null;
+    state.activeEditItemId = null;
+
+    saveState();
+    renderAll();
+    renderHistory();
+
+    showToast(
+      "El respaldo fue cargado correctamente."
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar el respaldo:",
+      error
+    );
+
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
     function downloadFile(name, content, type) {
       const blob = new Blob([content], { type });
       const url = URL.createObjectURL(blob);
@@ -1478,7 +1686,8 @@
       $("closeHistoryBtn").addEventListener("click", () => $("historyScreen").classList.add("hidden"));
       $("shareHistoryBtn").addEventListener("click", shareHistory);
       $("exportCsvBtn").addEventListener("click", exportCSV);
-      $("syncHistoryBtn").addEventListener("click", exportJSON);
+      $("syncHistoryBtn").addEventListener("click",backupToCloudflare);
+      $("loadCloudBackupBtn").addEventListener("click",loadBackupFromCloudflare);      
       $("exportQuickBtn").addEventListener("click", exportJSON);
       $("exportSettingsBtn").addEventListener("click", exportJSON);
       $("settingsBtn").addEventListener("click", () => showModal("settingsModal"));
