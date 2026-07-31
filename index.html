@@ -837,31 +837,6 @@
     let pendingFirstPin = "";
     let toastTimer;
 
-    async function validateBootstrapCode(code) {
-      try {
-        const response = await fetch(AUTH_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            code
-          })
-        });
-
-        if (!response.ok) {
-          return false;
-        }
-
-        const result = await response.json();
-
-        return result.ok === true;
-      } catch (error) {
-        console.error("Error al validar la clave base:", error);
-        return false;
-      }
-    }
-
     function defaultState() {
       return { items: [], records: [], period: "all", version: APP_VERSION };
     }
@@ -983,33 +958,39 @@
         return;
       }
 
-      if (authMode === "bootstrap") {
         if (authMode === "bootstrap") {
-          $("authText").textContent = "Validando clave base...";
+          $("authText").textContent =
+            "Validando clave base...";
 
           const validBootstrapCode =
             await validateBootstrapCode(pinBuffer);
 
           if (!validBootstrapCode) {
-            authError("Clave base incorrecta o servicio no disponible.");
+            authError(
+              "Clave base incorrecta o servicio no disponible."
+            );
+
             $("authText").textContent =
               "Ingresa la clave base de la aplicación.";
+
             return;
           }
 
           pinBuffer = "";
           authMode = "create";
 
-          $("authTitle").textContent = "Crea tu clave";
+          $("authTitle").textContent =
+            "Crea tu clave";
+
           $("authText").textContent =
             "Define una clave personal de 6 dígitos.";
 
           renderPinDots();
           return;
         }
-      }
-
-      if (authMode === "create") {
+ 
+ 
+        if (authMode === "create") {
         pendingFirstPin = pinBuffer;
         pinBuffer = "";
         authMode = "confirm";
