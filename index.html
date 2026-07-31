@@ -7,6 +7,7 @@
 
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Registro de Relación" />
@@ -1340,7 +1341,8 @@
     }
 function requestCloudCode(actionDescription) {
   const value = window.prompt(
-    `Ingresa la clave base de 6 dígitos para ${actionDescription}:`
+    `Ingresa la CLAVE BASE DE CLOUDFLARE para ${actionDescription}.\n\n` +
+    `No ingreses la clave personal con la que desbloqueas la aplicación.`
   );
 
   if (value === null) {
